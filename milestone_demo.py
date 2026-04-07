@@ -1,16 +1,19 @@
 """
-Age Predictor from Sleep Data
-==============================
+Stress Level Predictor from Sleep Data
+========================================
 A linear regression model built from scratch (no scikit-learn).
-Uses gradient descent to learn weights that predict age from:
+Uses gradient descent to learn weights that predict stress level from:
   - Sleep Duration (hours)
   - Quality of Sleep  (1-10)
 
 Data: Sleep_health_and_lifestyle_dataset.csv
-  Column 1  - Person ID (ignored)
-  Column 2  - Age (target)
-  Column 4  - Sleep Duration
-  Column 5  - Quality of Sleep
+  Column 0  - Person ID (ignored)
+  Column 1  - Gender (ignored)
+  Column 2  - Age (ignored)
+  Column 3  - Occupation (ignored)
+  Column 4  - Sleep Duration  (feature 1)
+  Column 5  - Quality of Sleep (feature 2)
+  Column 7  - Stress Level (target)
 """
 
 import numpy as np
@@ -26,13 +29,13 @@ def load_data(filepath: str):
     """Load CSV and extract the two features + target."""
     df = pd.read_csv(filepath)
 
-    # Grab columns by position (0-indexed): col1=Age, col3=SleepDuration, col4=QualityOfSleep
-    age            = df.iloc[:, 2].values.astype(float)   # target
-    sleep_duration = df.iloc[:, 4].values.astype(float)   # feature 1
-    sleep_quality  = df.iloc[:, 5].values.astype(float)   # feature 2
+    # Select columns by name for robustness
+    sleep_duration = df["Sleep Duration"].values.astype(float)    # feature 1
+    sleep_quality  = df["Quality of Sleep"].values.astype(float)  # feature 2
+    stress_level   = df["Stress Level"].values.astype(float)      # target
 
     X = np.column_stack([sleep_duration, sleep_quality])   # (n, 2)
-    y = age                                                 # (n,)
+    y = stress_level                                        # (n,)
     return X, y, df
 
 
@@ -168,7 +171,6 @@ def main():
     # --- locate file ---
     filepath = "Sleep_health_and_lifestyle_dataset.csv"
     if not os.path.exists(filepath):
-        # also check uploads directory
         alt = os.path.join("/mnt/user-data/uploads", filepath)
         if os.path.exists(alt):
             filepath = alt
@@ -177,22 +179,22 @@ def main():
             sys.exit(1)
 
     print("=" * 60)
-    print("  AGE PREDICTOR  --  From-Scratch Linear Regression")
+    print("  STRESS LEVEL PREDICTOR -- From-Scratch Linear Regression")
     print("=" * 60)
 
     # --- load ---
     X, y, df = load_data(filepath)
     print(f"\nDataset loaded: {len(y)} samples")
     print(f"  Features : Sleep Duration (hrs), Quality of Sleep (1-10)")
-    print(f"  Target   : Age")
-    print(f"  Age range: {y.min():.0f} - {y.max():.0f}")
+    print(f"  Target   : Stress Level")
+    print(f"  Stress range: {y.min():.0f} - {y.max():.0f}")
 
     # --- split ---
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_ratio=0.2)
     print(f"\nTrain / Test split: {len(y_train)} / {len(y_test)}")
 
     # --- scale ---
-    scaler  = StandardScaler()
+    scaler = StandardScaler()
     X_train_s = scaler.fit_transform(X_train)
     X_test_s  = scaler.transform(X_test)
 
@@ -215,31 +217,32 @@ def main():
     print("=" * 60)
     print(f"\n{'Metric':<22} {'Train':>10} {'Test':>10}")
     print("-" * 44)
-    print(f"{'MAE (years)':<22} {mean_absolute_error(y_train, y_pred_train):>10.2f} {mean_absolute_error(y_test, y_pred_test):>10.2f}")
-    print(f"{'RMSE (years)':<22} {root_mean_squared_error(y_train, y_pred_train):>10.2f} {root_mean_squared_error(y_test, y_pred_test):>10.2f}")
+    print(f"{'MAE':<22} {mean_absolute_error(y_train, y_pred_train):>10.4f} {mean_absolute_error(y_test, y_pred_test):>10.4f}")
+    print(f"{'RMSE':<22} {root_mean_squared_error(y_train, y_pred_train):>10.4f} {root_mean_squared_error(y_test, y_pred_test):>10.4f}")
     print(f"{'R^2 score':<22} {r_squared(y_train, y_pred_train):>10.4f} {r_squared(y_test, y_pred_test):>10.4f}")
 
     # --- learned parameters (unscaled for interpretability) ---
     w_orig = model.weights / scaler.std_
     b_orig = model.bias - np.sum(model.weights * scaler.mean_ / scaler.std_)
     print(f"\nLearned equation (original scale):")
-    print(f"  Age ~ {w_orig[0]:+.3f} * SleepDuration "
-          f"{w_orig[1]:+.3f} * SleepQuality "
-          f"{b_orig:+.3f}")
+    print(f"  Stress ~ {w_orig[0]:+.4f} * SleepDuration "
+          f"{w_orig[1]:+.4f} * SleepQuality "
+          f"{b_orig:+.4f}")
 
     # --- sample predictions ---
-    print(f"\n{'Sleep Dur':>10} {'Quality':>10} {'Predicted Age':>15} {'Actual Age':>12}")
-    print("-" * 50)
+    print(f"\n{'Sleep Dur':>10} {'Quality':>10} {'Predicted':>12} {'Actual':>10}")
+    print("-" * 45)
     rng = np.random.default_rng(99)
     sample_idx = rng.choice(len(y_test), size=min(10, len(y_test)), replace=False)
     for i in sample_idx:
-        print(f"{X_test[i, 0]:>10.1f} {X_test[i, 1]:>10.0f} {y_pred_test[i]:>15.1f} {y_test[i]:>12.0f}")
+        print(f"{X_test[i, 0]:>10.1f} {X_test[i, 1]:>10.0f}"
+              f" {y_pred_test[i]:>12.2f} {y_test[i]:>10.0f}")
 
     # --- interactive prediction ---
     print("\n" + "=" * 60)
     print("  INTERACTIVE PREDICTOR")
     print("=" * 60)
-    print("Enter sleep data to predict age (or 'q' to quit):\n")
+    print("Enter sleep data to predict stress level (or 'q' to quit):\n")
     while True:
         try:
             dur_input = input("  Sleep Duration (hours) : ").strip()
@@ -254,7 +257,7 @@ def main():
             x_new   = np.array([[dur, qual]])
             x_new_s = scaler.transform(x_new)
             pred    = model.predict(x_new_s)[0]
-            print(f"  -> Predicted Age: {pred:.1f} years\n")
+            print(f"  -> Predicted Stress Level: {pred:.2f}\n")
         except (ValueError, EOFError):
             break
 
