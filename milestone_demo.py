@@ -1,19 +1,12 @@
 """
 Stress Level Predictor from Sleep Data
 ========================================
-A linear regression model built from scratch (no scikit-learn).
+A linear regression model
 Uses gradient descent to learn weights that predict stress level from:
   - Sleep Duration (hours)
   - Quality of Sleep  (1-10)
 
 Data: Sleep_health_and_lifestyle_dataset.csv
-  Column 0  - Person ID (ignored)
-  Column 1  - Gender (ignored)
-  Column 2  - Age (ignored)
-  Column 3  - Occupation (ignored)
-  Column 4  - Sleep Duration  (feature 1)
-  Column 5  - Quality of Sleep (feature 2)
-  Column 7  - Stress Level (target)
 """
 
 import numpy as np
@@ -179,7 +172,7 @@ def main():
             sys.exit(1)
 
     print("=" * 60)
-    print("  STRESS LEVEL PREDICTOR -- From-Scratch Linear Regression")
+    print("  STRESS LEVEL PREDICTOR -- Linear Regression")
     print("=" * 60)
 
     # --- load ---
