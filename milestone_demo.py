@@ -303,5 +303,64 @@ def load_health_data(filepath: str):
 
     return X, df
 
+def prepare_health_outputs(df):
+    """
+    Prepares the health outputs that the program will predict.
+    """
+
+    # -------------------------------
+    # OUTPUT 1: BMI Category
+    # -------------------------------
+    bmi_categories = sorted(df["BMI Category"].unique())
+
+    bmi_to_number = {}
+
+    for i in range(len(bmi_categories)):
+        bmi_to_number[bmi_categories[i]] = i
+
+    bmi_category = df["BMI Category"].map(bmi_to_number).values.astype(float)
+
+    # -------------------------------
+    # OUTPUT 2: Blood Pressure
+    # -------------------------------
+    bp_parts = df["Blood Pressure"].str.split("/", expand=True)
+
+    systolic_bp = bp_parts[0].values.astype(float)
+    diastolic_bp = bp_parts[1].values.astype(float)
+
+    # -------------------------------
+    # OUTPUT 3: Resting Heart Rate
+    # -------------------------------
+    heart_rate = df["Heart Rate"].values.astype(float)
+
+    # -------------------------------
+    # OUTPUT 4: Daily Steps
+    # -------------------------------
+    daily_steps = df["Daily Steps"].values.astype(float)
+
+    # -------------------------------
+    # OUTPUT 5: Stress Level
+    # -------------------------------
+    stress_level = df["Stress Level"].values.astype(float)
+
+    # -------------------------------
+    # OUTPUT 6: Physical Activity Level
+    # -------------------------------
+    activity_level = df["Physical Activity Level"].values.astype(float)
+
+    y = np.column_stack(
+        [
+            bmi_category,
+            systolic_bp,
+            diastolic_bp,
+            heart_rate,
+            daily_steps,
+            stress_level,
+            activity_level
+        ]
+    )
+
+    return y, bmi_categories
+
 if __name__ == "__main__":
     main()
