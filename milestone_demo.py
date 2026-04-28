@@ -463,3 +463,8 @@ def run_health_prediction(filepath: str):
 
 if __name__ == "__main__":
     main()
+
+    filepath = "Sleep_health_and_lifestyle_dataset.csv"
+
+    if os.path.exists(filepath):
+        run_health_prediction(filepath)
