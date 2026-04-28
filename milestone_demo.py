@@ -256,6 +256,52 @@ def main():
 
     print("\nDone.")
 
+# ----------------------------------------------
+# 5.  HEALTH DATA LOADING
+# ----------------------------------------------
+
+def load_health_data(filepath: str):
+    """
+    Loads the same CSV file but uses more inputs and outputs.
+    """
+
+    df = pd.read_csv(filepath)
+
+    # -------------------------------
+    # INPUT 1: Sleep Duration
+    # -------------------------------
+    sleep_duration = df["Sleep Duration"].values.astype(float)
+
+    # -------------------------------
+    # INPUT 2: Quality of Sleep
+    # -------------------------------
+    sleep_quality = df["Quality of Sleep"].values.astype(float)
+
+    # -------------------------------
+    # INPUT 3: Age
+    # -------------------------------
+    age = df["Age"].values.astype(float)
+
+    # -------------------------------
+    # INPUT 4: Gender
+    # -------------------------------
+    gender = df["Gender"].map(
+        {
+            "Male": 0,
+            "Female": 1
+        }
+    ).values.astype(float)
+
+    X = np.column_stack(
+        [
+            sleep_duration,
+            sleep_quality,
+            age,
+            gender
+        ]
+    )
+
+    return X, df
 
 if __name__ == "__main__":
     main()
