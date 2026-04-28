@@ -362,5 +362,104 @@ def prepare_health_outputs(df):
 
     return y, bmi_categories
 
+def run_health_prediction(filepath: str):
+    """
+    Runs the health prediction part of the project.
+    """
+
+    print("\n" + "=" * 60)
+    print("  HEALTH PREDICTION FROM SLEEP DATA")
+    print("=" * 60)
+
+    X, df = load_health_data(filepath)
+    y, bmi_categories = prepare_health_outputs(df)
+
+    print(f"\nDataset loaded: {len(y)} samples")
+
+    print("\nInputs:")
+    print("  1. Sleep Duration")
+    print("  2. Quality of Sleep")
+    print("  3. Age")
+    print("  4. Gender")
+
+    print("\nPredictions:")
+    print("  1. BMI Category")
+    print("  2. Blood Pressure")
+    print("  3. Resting Heart Rate")
+    print("  4. Daily Steps")
+    print("  5. Stress Level")
+    print("  6. Physical Activity Level")
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_ratio=0.2,
+        seed=42
+    )
+
+    scaler = StandardScaler()
+
+    X_train_s = scaler.fit_transform(X_train)
+    X_test_s = scaler.transform(X_test)
+
+    print("\n-- Training --")
+
+    model = LinearRegressionGD(
+        learning_rate=0.01,
+        epochs=2000,
+        batch_size=32,
+        seed=42
+    )
+
+    model.fit(X_train_s, y_train)
+
+    y_pred = model.predict(X_test_s)
+
+    print("\n" + "=" * 60)
+    print("  RESULTS")
+    print("=" * 60)
+
+    output_names = [
+        "BMI Category",
+        "Systolic Blood Pressure",
+        "Diastolic Blood Pressure",
+        "Resting Heart Rate",
+        "Daily Steps",
+        "Stress Level",
+        "Physical Activity Level"
+    ]
+
+    for i in range(len(output_names)):
+        mae = mean_absolute_error(y_test[:, i], y_pred[:, i])
+        rmse = root_mean_squared_error(y_test[:, i], y_pred[:, i])
+
+        print(f"\n{output_names[i]}")
+        print(f"  MAE : {mae:.4f}")
+        print(f"  RMSE: {rmse:.4f}")
+
+    print("\n" + "=" * 60)
+    print("  SAMPLE PREDICTIONS")
+    print("=" * 60)
+
+    for i in range(min(10, len(y_test))):
+        predicted_bmi_number = int(round(y_pred[i, 0]))
+
+        if predicted_bmi_number < 0:
+            predicted_bmi_number = 0
+
+        if predicted_bmi_number >= len(bmi_categories):
+            predicted_bmi_number = len(bmi_categories) - 1
+
+        actual_bmi_number = int(y_test[i, 0])
+
+        print(f"\nPerson {i + 1}")
+        print(f"  Actual BMI Category    : {bmi_categories[actual_bmi_number]}")
+        print(f"  Predicted BMI Category : {bmi_categories[predicted_bmi_number]}")
+        print(f"  Predicted BP           : {y_pred[i, 1]:.0f}/{y_pred[i, 2]:.0f}")
+        print(f"  Predicted Heart Rate   : {y_pred[i, 3]:.0f}")
+        print(f"  Predicted Daily Steps  : {y_pred[i, 4]:.0f}")
+        print(f"  Predicted Stress Level : {y_pred[i, 5]:.1f}")
+        print(f"  Predicted Activity Lvl : {y_pred[i, 6]:.1f}")
+
 if __name__ == "__main__":
     main()
