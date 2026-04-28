@@ -285,12 +285,14 @@ def load_health_data(filepath: str):
     # -------------------------------
     # INPUT 4: Gender
     # -------------------------------
-    gender = df["Gender"].map(
-        {
-            "Male": 0,
-            "Female": 1
-        }
-    ).values.astype(float)
+    gender_raw = df["Gender"].values
+    gender = np.zeros(len(gender_raw))
+
+    for i in range(len(gender_raw)):
+        if gender_raw[i].lower() == "female":
+            gender[i] = 1.0
+        else:
+            gender[i] = 0.0
 
     X = np.column_stack(
         [
@@ -361,7 +363,57 @@ def prepare_health_outputs(df):
     )
 
     return y, bmi_categories
+    
+# ----------------------------------------------
+# 7.  LINEAR REGRESSION FOR MULTIPLE OUTPUTS
+# ----------------------------------------------
 
+class MultiOutputLinearRegressionGD:
+    """
+    This is almost the same idea as the first linear regression class,
+    but this one can predict more than one output at the same time.
+    """
+
+    def __init__(self, learning_rate=0.01, epochs=2000, seed=42):
+        self.learning_rate = learning_rate
+        self.epochs = epochs
+        self.seed = seed
+        self.weights = None
+        self.bias = None
+        self.loss_history = []
+
+    def predict(self, X):
+        return X @ self.weights + self.bias
+
+    def fit(self, X, y):
+        rng = np.random.default_rng(self.seed)
+
+        n_samples = X.shape[0]
+        n_features = X.shape[1]
+        n_outputs = y.shape[1]
+
+        self.weights = rng.normal(0, 0.1, size=(n_features, n_outputs))
+        self.bias = np.zeros(n_outputs)
+
+        for epoch in range(1, self.epochs + 1):
+            y_hat = self.predict(X)
+
+            error = y_hat - y
+
+            dw = (2 / n_samples) * (X.T @ error)
+            db = (2 / n_samples) * np.sum(error, axis=0)
+
+            self.weights -= self.learning_rate * dw
+            self.bias -= self.learning_rate * db
+
+            loss = np.mean(error ** 2)
+            self.loss_history.append(loss)
+
+            if epoch == 1 or epoch % 500 == 0:
+                print(f"  Epoch {epoch:>5d}/{self.epochs}  --  MSE: {loss:.4f}")
+
+        return self
+    
 def run_health_prediction(filepath: str):
     """
     Runs the health prediction part of the project.
@@ -404,12 +456,11 @@ def run_health_prediction(filepath: str):
 
     print("\n-- Training --")
 
-    model = LinearRegressionGD(
-        learning_rate=0.01,
-        epochs=2000,
-        batch_size=32,
-        seed=42
-    )
+    model = MultiOutputLinearRegressionGD(
+    learning_rate=0.01,
+    epochs=2000,
+    seed=42
+)
 
     model.fit(X_train_s, y_train)
 
@@ -460,6 +511,79 @@ def run_health_prediction(filepath: str):
         print(f"  Predicted Daily Steps  : {y_pred[i, 4]:.0f}")
         print(f"  Predicted Stress Level : {y_pred[i, 5]:.1f}")
         print(f"  Predicted Activity Lvl : {y_pred[i, 6]:.1f}")
+
+    print("\n" + "=" * 60)
+    print("  TRY YOUR OWN INPUT")
+    print("=" * 60)
+    print("Type q to quit.\n")
+
+    while True:
+        try:
+            dur_input = input("  Sleep Duration (hours) : ").strip()
+
+            if dur_input.lower() == "q":
+                break
+
+            qual_input = input("  Quality of Sleep (1-10): ").strip()
+
+            if qual_input.lower() == "q":
+                break
+
+            age_input = input("  Age                    : ").strip()
+
+            if age_input.lower() == "q":
+                break
+
+            gender_input = input("  Gender (Male/Female)   : ").strip()
+
+            if gender_input.lower() == "q":
+                break
+
+            sleep_duration = float(dur_input)
+            sleep_quality = float(qual_input)
+            age = float(age_input)
+
+            if gender_input.lower().startswith("m"):
+                gender = 0
+            else:
+                gender = 1
+
+            user_data = np.array(
+                [
+                    [
+                        sleep_duration,
+                        sleep_quality,
+                        age,
+                        gender
+                    ]
+                ]
+            )
+
+            user_data_s = scaler.transform(user_data)
+
+            prediction = model.predict(user_data_s)[0]
+
+            predicted_bmi_number = int(round(prediction[0]))
+
+            if predicted_bmi_number < 0:
+                predicted_bmi_number = 0
+
+            if predicted_bmi_number >= len(bmi_categories):
+                predicted_bmi_number = len(bmi_categories) - 1
+
+            print("\n  Predicted Results")
+            print("  " + "-" * 35)
+            print(f"  BMI Category            : {bmi_categories[predicted_bmi_number]}")
+            print(f"  Blood Pressure          : {prediction[1]:.0f}/{prediction[2]:.0f}")
+            print(f"  Resting Heart Rate      : {prediction[3]:.0f}")
+            print(f"  Daily Steps             : {prediction[4]:.0f}")
+            print(f"  Stress Level            : {prediction[5]:.1f}")
+            print(f"  Physical Activity Level : {prediction[6]:.1f}")
+            print()
+
+        except (ValueError, EOFError):
+            print("\nInvalid input. Please try again.\n")
+            break
 
 if __name__ == "__main__":
     main()
